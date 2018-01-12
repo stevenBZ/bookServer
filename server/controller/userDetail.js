@@ -13,18 +13,15 @@ const findAllUsers = () => {
     });
 };
 
-//删除某个用户
+//更新某个用户
 const updateUserDetails = function(params){
     let username=params.username;
     let country=params.country;
-    console.log(username);
-    console.log(country);
     return new Promise(( resolve, reject) => {
         User.findOneAndUpdate({ username: username }, {username:username,country:country},err => {
             if(err){
                 reject(err);
             }
-            console.log('更新用户成功');
             resolve();
         });
     });
@@ -90,11 +87,50 @@ const UpdateUserDetails=async(ctx)=>{
     };
 };
 
+///更新用户的收藏信息 data:JSON
+const DoCollection=async(ctx)=>{
+    let fields=ctx.request.body;
+    let username=fields.username;
+    let bookId=fields.bookId;
+    let params={
+        username:username,
+        bookId:bookId
+    }
+    // console.log('参数为,',JSON.stringify(params));
+    let userInfo=await findUserDetail(username);
+    console.log('查询结果为,',JSON.stringify(userInfo));
+    
+    if(userInfo){
+        let userCollection=userInfo.myCollection
+        if(userCollection.includes(bookId)){
+            ctx.status=200;
+            ctx.body = {
+                success: false
+            };
+            return
+        }
+        else{
+            userCollection.push(bookId)
+            User.findOneAndUpdate({ username: username }, {username:username,myCollection:userCollection},err => {
+                if(err){
+                    console.log(err);
+                }
+            });
+        }
+    }
+    ctx.status=200;
+    ctx.body = {
+        success: true
+    };
+
+};
+
 
 
 
 module.exports = {
     GetUserDetail,
     GetAllUsers,
-    UpdateUserDetails
+    UpdateUserDetails,
+    DoCollection
 };

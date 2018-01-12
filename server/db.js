@@ -22,7 +22,8 @@ const userSchema = mongoose.Schema({
 });
 const userDetailSchema = mongoose.Schema({
     username: String,
-    country:String
+    country:String,
+    myCollection:Array,
 });
 const bookSchema = mongoose.Schema({
     title:String,
@@ -31,11 +32,17 @@ const bookSchema = mongoose.Schema({
     author:String,
     intro:String,
 });
+const chatHistorySchema=mongoose.Schema({
+    sender:String,
+    toUser:String,
+    chatHistoryList:Array,
+});
 //根据schema生成model
 const model = {
     User: mongoose.model('User', userSchema),
     Book: mongoose.model('Book', bookSchema),
-    UserDetail: mongoose.model('UserDetail', userDetailSchema)
+    UserDetail: mongoose.model('UserDetail', userDetailSchema),
+    ChatHistory:mongoose.model('ChatHistory',chatHistorySchema)
 };
 
 module.exports = model;

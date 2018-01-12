@@ -1,4 +1,6 @@
 const Book = require('../db.js').Book;
+const User = require('../db.js').UserDetail;
+const mongoose = require('mongoose');
 const fs = require('fs');
 const { URL } = require('url');
 //下面这两个包用来生成时间
@@ -30,6 +32,7 @@ const SaveBook = async ( ctx ) => {
      // const {files, fields} = await asyncBusboy(ctx.req);
     // var form = new formidable.IncomingForm();
     var fields=ctx.request.body;
+    var _id=fields._id;
     var ctxTitle=fields.title;
     var ctxFile=fields.path;
     var ctxAuthor=fields.author;
@@ -37,8 +40,6 @@ const SaveBook = async ( ctx ) => {
     var contentText = fs.readFileSync(ctxFile);
     var filePath=getImgName(ctxFile);
     var fileUrl=getImgUrl(ctxFile);
-    console.log('用户名为:',ctxAuthor);
-    // console.log(__dirname);
     fs.writeFile(filePath, contentText,'binary', function(err){
         if(err){
             console.log("down fail");
@@ -46,6 +47,7 @@ const SaveBook = async ( ctx ) => {
         else{console.log("down success");}
     });
     let book = new Book({
+        _id:_id,
         title: ctxTitle,
         uri: filePath,
         author:ctxAuthor,
@@ -64,7 +66,6 @@ const SaveBook = async ( ctx ) => {
                 resolve();
             });
         });
-        console.log('上传成功');
         ctx.status = 200;
         ctx.body = {
             success: true
@@ -84,6 +85,30 @@ const findAllBooks = () => {
     });
 };
 
+//找到某个用户的所有书籍
+const findMyBooks = (username) => {
+    return new Promise((resolve, reject) => {
+        Book.find({author:username}, (err, doc) => {
+            if(err){
+                reject(err);
+            }
+            resolve(doc);
+        });
+    });
+};
+
+//根据id查找书籍
+const findBookById = (id) => {
+    return new Promise((resolve, reject) => {
+        Book.findById(id, (err, doc) => {
+            if(err){
+                reject(err);
+            }
+            resolve(doc);
+        });
+    });
+};
+
 //删除所有书籍信息
 const DelBooks = function(){
     return new Promise(( resolve, reject) => {
@@ -91,7 +116,6 @@ const DelBooks = function(){
             if(err){
                 reject(err);
             }
-            console.log('删除用户成功');
             resolve();
         });
     });
@@ -102,13 +126,58 @@ const GetAllBooks = async( ctx ) => {
     let doc = await findAllBooks();
     ctx.status = 200;
     ctx.body = {
-        succsess: '成功',
+        success: true,
         result: doc
+    };
+};
+
+//获得某用户的书籍信息
+const GetMyBooks = async( ctx ) => {
+    const username=ctx.query.username;
+    //查询所有用户信息
+    let doc = await findMyBooks(username);
+    ctx.status = 200;
+    ctx.body = {
+        success: true,
+        result: doc
+    };
+};
+//根据用户名查找用户
+const findUserDetail = (username) => {
+    return new Promise((resolve, reject) => {
+        User.findOne({ username }, (err, doc) => {
+            if(err){
+                reject(err);
+            }
+            resolve(doc);
+        });
+    });
+};
+//获得某用户收藏的书籍信息
+const GetMyCollectionBooks = async( ctx ) => {
+    const username=ctx.query.username;
+    //查询所有用户信息
+    let userInfo = await findUserDetail(username); 
+    let res=[]
+    if(userInfo){
+        let userCollection=userInfo.myCollection
+       
+        for(let i=0;i<userCollection.length;i++){
+            var doc=await findBookById(userCollection[i]) 
+            res.push(doc)
+        }
+    }
+    ctx.status = 200;
+    ctx.body = {
+        success: true,
+        result: res
     };
 };
 
 module.exports = {
     SaveBook,
     GetAllBooks,
-    DelBooks
+    DelBooks,
+    GetMyBooks,
+    GetMyCollectionBooks
 };
