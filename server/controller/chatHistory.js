@@ -30,6 +30,7 @@ const GetChatHistory = async( ctx ) => {
     let toUser=ctx.query.toUser;
     //查询聊天记录
     let doc = await findChatHistory(sender,toUser);
+    // console.log(doc)
     ctx.status = 200;
     ctx.body = {
         success: true,
@@ -60,12 +61,17 @@ const createChatHistory=(sender,toUser,messageData)=>{
             }
         });
 }
-const updateChatHistory=(sender,toUser,doc,messageData)=>{
+const updateChatHistory=async (sender,toUser,doc,messageData)=>{
     let _chatHistory=doc['chatHistoryList']?doc['chatHistoryList']:[];
     _chatHistory.push(messageData);
+    await new Promise((resolve, reject) => {
     ChatHistory.update({sender:sender,toUser:toUser}, {chatHistoryList: _chatHistory},  function(err, docs){
-        if(err) console.log(err);
+        if(err){
+            reject(err);
+        }
+        resolve(docs);
     })
+  })
 }
 //发送信息
 const PostMessage = async ( ctx ) => {
@@ -77,8 +83,26 @@ const PostMessage = async ( ctx ) => {
         createChatHistory(sender,toUser,messageData);
         createChatHistory(toUser,sender,messageData);      
     }else{
-        updateChatHistory(sender,toUser,doc,messageData)
-        updateChatHistory(toUser,sender,doc,messageData)        
+        // updateChatHistory(sender,toUser,doc,messageData)
+        // updateChatHistory(toUser,sender,doc,messageData)  
+        let _chatHistory=doc['chatHistoryList']?doc['chatHistoryList']:[];  
+        _chatHistory.push(messageData);    
+        await new Promise((resolve, reject) => {
+            ChatHistory.update({sender:sender,toUser:toUser}, {chatHistoryList: _chatHistory},  function(err, docs){
+                if(err){
+                    reject(err);
+                }
+                resolve(docs);
+            })
+          })
+          await new Promise((resolve, reject) => {
+            ChatHistory.update({sender:toUser,toUser:sender}, {chatHistoryList: _chatHistory},  function(err, docs){
+                if(err){
+                    reject(err);
+                }
+                resolve(docs);
+            })
+          })
     }
     ctx.status = 200;
         ctx.body = { 
